@@ -1,38 +1,37 @@
 // lib/screens/profile_screen.dart'
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:utspam_soald_if5b_3012310044/providers/auth_provider.dart';
+import '../models/user.dart';
+import '../utils/constants.dart';
 
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({Key? key}) : super(key: key);
+  final User user;
+
+  const ProfileScreen({Key? key, required this.user}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<AuthProvider>(context).user;
-    if (user == null) {
-      return const Scaffold(
-          body: Center(child: Text('Data pengguna tidak ditemukan.')));
-    }
-
     return Scaffold(
-      appBar: AppBar(title: const Text('Profil Pengguna')),
+      appBar: AppBar(
+        title: Text(AppStrings.profileTitle),
+        backgroundColor: AppColors.primaryGreen,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: ListView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Text(
-                user.fullName.substring(0, 1).toUpperCase(),
-                style: const TextStyle(fontSize: 40, color: Colors.white),
+            const Center(
+              child: CircleAvatar(
+                radius: 50,
+                backgroundColor: AppColors.lightGreen,
+                child: Icon(Icons.person, size: 50, color: AppColors.white),
               ),
             ),
             const SizedBox(height: 24),
             _buildProfileItem('Nama Lengkap', user.fullName),
             _buildProfileItem('Email', user.email),
-            _buildProfileItem('Nomor Telepon', user.phoneNumber),
+            _buildProfileItem('No. Telepon', user.phoneNumber),
             _buildProfileItem('Alamat', user.address),
             _buildProfileItem('Username', user.username),
           ],
@@ -50,12 +49,19 @@ class ProfileScreen extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-                fontWeight: FontWeight.bold, color: Colors.grey),
+              fontSize: 14,
+              color: AppColors.grey,
+              fontWeight: FontWeight.w500,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(fontSize: 16),
+            style: const TextStyle(
+              fontSize: 16,
+              color: AppColors.darkGrey,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const Divider(),
         ],

@@ -1,59 +1,71 @@
-enum PurchaseMethod { direct, prescription }
+// lib/models/transaction.dart
 
-enum TransactionStatus { completed, canceled }
+import 'medicine.dart';
 
 class Transaction {
-  final String id, buyerName, medicineName, date;
+  final String id;
+  final String buyerName;
+  final Medicine medicine;
   final int quantity;
-  final double unitPrice, totalPrice;
-  final PurchaseMethod purchaseMethod;
-  final String? prescriptionNumber, prescriptionImagePath, notes;
-  TransactionStatus status;
+  final String notes;
+  final String purchaseMethod; // 'Beli Langsung' or 'Resep Dokter'
+  final String? prescriptionNumber; // Opsional
+  final String? prescriptionImagePath; // <-- FIELD BARU: Untuk menyimpan path foto resep
+  final DateTime timestamp;
+  final String status; // 'Aktif', 'Selesai', 'Dibatalkan'
 
   Transaction({
     required this.id,
     required this.buyerName,
-    required this.medicineName,
+    required this.medicine,
     required this.quantity,
-    required this.unitPrice,
-    required this.totalPrice,
-    required this.date,
+    required this.notes,
     required this.purchaseMethod,
     this.prescriptionNumber,
-    this.prescriptionImagePath,
-    this.status = TransactionStatus.completed,
-    this.notes,
+    this.prescriptionImagePath, // <-- TAMBAHKAN KE CONSTRUCTOR
+    required this.timestamp,
+    required this.status,
   });
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'buyerName': buyerName,
-        'medicineName': medicineName,
-        'quantity': quantity,
-        'unitPrice': unitPrice,
-        'totalPrice': totalPrice,
-        'date': date,
-        'purchaseMethod': purchaseMethod.name,
-        'prescriptionNumber': prescriptionNumber,
-        'prescriptionImagePath': prescriptionImagePath,
-        'status': status.name,
-        'notes': notes,
-      };
+  double get totalPrice => medicine.price * quantity;
 
-  factory Transaction.fromJson(Map<String, dynamic> json) => Transaction(
-        id: json['id'],
-        buyerName: json['buyerName'],
-        medicineName: json['medicineName'],
-        quantity: json['quantity'],
-        unitPrice: json['unitPrice'].toDouble(),
-        totalPrice: json['totalPrice'].toDouble(),
-        date: json['date'],
-        purchaseMethod: PurchaseMethod.values
-            .firstWhere((e) => e.name == json['purchaseMethod']),
-        prescriptionNumber: json['prescriptionNumber'],
-        prescriptionImagePath: json['prescriptionImagePath'],
-        status: TransactionStatus.values
-            .firstWhere((e) => e.name == json['status']),
-        notes: json['notes'],
-      );
+  factory Transaction.fromJson(Map<String, dynamic> json) {
+    return Transaction(
+      id: json['id'],
+      buyerName: json['buyerName'],
+      medicine: Medicine(
+        id: json['medicine']['id'],
+        name: json['medicine']['name'],
+        imageUrl: json['medicine']['imageUrl'],
+        price: json['medicine']['price'].toDouble(),
+      ),
+      quantity: json['quantity'],
+      notes: json['notes'],
+      purchaseMethod: json['purchaseMethod'],
+      prescriptionNumber: json['prescriptionNumber'],
+      prescriptionImagePath: json['prescriptionImagePath'], // <-- TAMBAHKAN KE fromJson
+      timestamp: DateTime.parse(json['timestamp']),
+      status: json['status'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'buyerName': buyerName,
+      'medicine': {
+        'id': medicine.id,
+        'name': medicine.name,
+        'imageUrl': medicine.imageUrl,
+        'price': medicine.price,
+      },
+      'quantity': quantity,
+      'notes': notes,
+      'purchaseMethod': purchaseMethod,
+      'prescriptionNumber': prescriptionNumber,
+      'prescriptionImagePath': prescriptionImagePath, // <-- TAMBAHKAN KE toJson
+      'timestamp': timestamp.toIso8601String(),
+      'status': status,
+    };
+  }
 }

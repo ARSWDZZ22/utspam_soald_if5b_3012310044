@@ -1,21 +1,28 @@
+// lib/widgets/custom_textfield.dart
+
 import 'package:flutter/material.dart';
 
-class CustomTextfield extends StatelessWidget {
-  final TextEditingController controller;
-  final String label;
-  final String? Function(String?)? validator;
-  final TextInputType keyboardType;
+class CustomTextField extends StatelessWidget {
+  final String labelText;
+  final String? hintText;
+  final IconData? prefixIcon;
   final bool obscureText;
-  final int maxLines;
-  const CustomTextfield(
-      {Key? key,
-      required this.controller,
-      required this.label,
-      this.validator,
-      this.keyboardType = TextInputType.text,
-      this.obscureText = false,
-      this.maxLines = 1})
-      : super(key: key);
+  final TextInputType keyboardType;
+  final String? Function(String?)? validator;
+  final TextEditingController? controller;
+  final void Function(String)? onChanged;
+
+  const CustomTextField({
+    Key? key,
+    required this.labelText,
+    this.hintText,
+    this.prefixIcon,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.validator,
+    this.controller,
+    this.onChanged,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +30,23 @@ class CustomTextfield extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16.0),
       child: TextFormField(
         controller: controller,
-        decoration: InputDecoration(labelText: label),
-        validator: validator,
-        keyboardType: keyboardType,
         obscureText: obscureText,
-        maxLines: maxLines,
+        keyboardType: keyboardType,
+        validator: validator,
+        onChanged: onChanged,
+        decoration: InputDecoration(
+          labelText: labelText,
+          hintText: hintText,
+          prefixIcon: prefixIcon != null ? Icon(prefixIcon) : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.green, width: 2.0),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        ),
       ),
     );
   }

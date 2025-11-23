@@ -1,24 +1,23 @@
 name: utspam_soald_if5b_3012310044
-description: A high-fidelity e-pharmacy platform.
+description: Aplikasi mobile untuk pembelian obat dengan validasi resep dokter.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.0.0 <4.0.0' # Lebih fleksibel untuk Dart 3.x
+  flutter: ">=3.32.1" # Disesuaikan dengan versi Anda atau lebih tinggi
 
 dependencies:
   flutter:
     sdk: flutter
-  provider: ^6.1.2
-  shared_preferences: ^2.5.3
-  image_picker: ^1.1.2
-  intl: ^0.19.0
-  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.2
+  shared_preferences: ^2.5.3 # Dependensi wajib
+  image_picker: ^1.0.4 # Dependensi untuk memilih gambar dari galeri atau kamera
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^4.0.0
+  flutter_lints: ^2.0.0
 
 flutter:
   uses-material-design: true

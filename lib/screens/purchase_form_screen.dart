@@ -1,21 +1,24 @@
 // lib/screens/purchase_form_screen.dart
 
+import 'dart:io'; // <-- IMPORT UNTUK MENANGANI FILE
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:utspam_soald_if5b_3012310044/models/medicine.dart';
-import 'package:utspam_soald_if5b_3012310044/models/transaction.dart';
-import 'package:utspam_soald_if5b_3012310044/providers/auth_provider.dart';
-import 'package:utspam_soald_if5b_3012310044/providers/transaction_provider.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/constants.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/helpers.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/validators.dart';
-import 'package:utspam_soald_if5b_3012310044/widgets/custom_button.dart';
-import 'package:utspam_soald_if5b_3012310044/widgets/custom_textfield.dart';
+import 'package:image_picker/image_picker.dart'; // <-- IMPORT PACKAGE IMAGE_PICKER
+import '../models/user.dart';
+import '../models/medicine.dart';
+import '../models/transaction.dart';
+import '../services/storage_service.dart';
+import '../utils/constants.dart';
+import '../utils/validators.dart';
+import '../utils/helpers.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_textfield.dart';
+import 'history_screen.dart';
 
 class PurchaseFormScreen extends StatefulWidget {
-  final Medicine? medicine; // Bisa null jika dibuka dari menu
-  const PurchaseFormScreen({Key? key, this.medicine}) : super(key: key);
+  final User user;
+  final Medicine? selectedMedicine;
+
+  const PurchaseFormScreen({Key? key, required this.user, this.selectedMedicine}) : super(key: key);
 
   @override
   _PurchaseFormScreenState createState() => _PurchaseFormScreenState();
@@ -23,139 +26,109 @@ class PurchaseFormScreen extends StatefulWidget {
 
 class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _quantityController = TextEditingController(text: '1');
-  final _notesController = TextEditingController();
-  final _prescriptionNumberController = TextEditingController();
+  final StorageService _storageService = StorageService();
+  final ImagePicker _picker = ImagePicker(); // INSTANCE IMAGE_PICKER
 
-  PurchaseMethod _purchaseMethod = PurchaseMethod.direct;
-  String? _prescriptionImagePath;
+  late TextEditingController _buyerNameController;
+  late TextEditingController _quantityController;
+  late TextEditingController _notesController;
+  late TextEditingController _prescriptionNumberController;
+
   Medicine? _selectedMedicine;
+  int _quantity = 1;
+  String _purchaseMethod = 'Beli Langsung';
+  bool _isPrescriptionSelected = false;
+  File? _prescriptionImage; // VARIABEL UNTUK MENYIMPAN FILE GAMBAR
+
+  final List<Medicine> _dummyMedicines = [
+    Medicine(id: '1', name: 'Paracetamol 500mg', imageUrl: 'https://via.placeholder.com/150', price: 5000),
+    Medicine(id: '2', name: 'Amoxicillin 500mg', imageUrl: 'https://via.placeholder.com/150/FFC0CB/000000', price: 10000),
+    Medicine(id: '3', name: 'Vitamin C 1000mg', imageUrl: 'https://via.placeholder.com/150/0000FF/FFFFFF', price: 7500),
+  ];
 
   @override
   void initState() {
     super.initState();
-    // Jika obat dikirim dari halaman sebelumnya (misal dari home), gunakan itu
-    _selectedMedicine = widget.medicine;
+    _buyerNameController = TextEditingController(text: widget.user.fullName);
+    _quantityController = TextEditingController(text: '1');
+    _notesController = TextEditingController();
+    _prescriptionNumberController = TextEditingController();
+    _selectedMedicine = widget.selectedMedicine ?? _dummyMedicines.first;
   }
 
   @override
   void dispose() {
+    _buyerNameController.dispose();
     _quantityController.dispose();
     _notesController.dispose();
     _prescriptionNumberController.dispose();
     super.dispose();
   }
 
+  double get _totalPrice => (_selectedMedicine?.price ?? 0) * _quantity;
+
+  // FUNGSI UNTUK MEMILIH GAMBAR DARI GALERI
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
-        _prescriptionImagePath = pickedFile.path;
+        _prescriptionImage = File(pickedFile.path);
       });
     }
   }
 
-  double _calculateTotalPrice() {
-    if (_selectedMedicine == null) return 0.0;
-    final quantity = int.tryParse(_quantityController.text) ?? 0;
-    return _selectedMedicine!.price * quantity;
-  }
-
-  // FUNGSI YANG SUDAH DIPERBAIKI
-  Future<void> _submitOrder() async {
-    // 1. Pastikan obat sudah dipilih
-    if (_selectedMedicine == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Harap pilih obat terlebih dahulu dari daftar.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      return;
-    }
-
-    // 2. Validasi semua field di dalam form
+  Future<void> _submitPurchase() async {
     if (_formKey.currentState!.validate()) {
-      // 3. Jika metode resep, pastikan gambar sudah diunggah
-      if (_purchaseMethod == PurchaseMethod.prescription &&
-          _prescriptionImagePath == null) {
+      // VALIDASI WAJIB UNGGAH FOTO RESEP
+      if (_isPrescriptionSelected && _prescriptionImage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content:
-                Text('Foto resep wajib diunggah untuk metode pembelian ini.'),
-            backgroundColor: Colors.orange,
-          ),
+          const SnackBar(content: Text('Foto resep wajib diunggah.'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+      // VALIDASI WAJIB ISI NOMOR RESEP
+      if (_isPrescriptionSelected && _prescriptionNumberController.text.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nomor resep wajib diisi.'), backgroundColor: Colors.red),
         );
         return;
       }
 
-      // Jika semua validasi lolos, proses penyimpanan
-      try {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final transactionProvider =
-            Provider.of<TransactionProvider>(context, listen: false);
+      final newTransaction = Transaction(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        buyerName: _buyerNameController.text,
+        medicine: _selectedMedicine!,
+        quantity: _quantity,
+        notes: _notesController.text,
+        purchaseMethod: _purchaseMethod,
+        prescriptionNumber: _isPrescriptionSelected ? _prescriptionNumberController.text : null,
+        prescriptionImagePath: _prescriptionImage?.path, // SIMPAN PATH GAMBAR
+        timestamp: DateTime.now(),
+        status: 'Aktif',
+      );
 
-        final newTransaction = Transaction(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          buyerName: authProvider.user?.fullName ?? 'Pembeli',
-          medicineName: _selectedMedicine!.name,
-          quantity: int.parse(_quantityController.text),
-          unitPrice: _selectedMedicine!.price,
-          totalPrice: _calculateTotalPrice(),
-          date: Helpers.formatDate(DateTime.now()),
-          purchaseMethod: _purchaseMethod,
-          prescriptionNumber: _prescriptionNumberController.text.isEmpty
-              ? null
-              : _prescriptionNumberController.text,
-          prescriptionImagePath: _prescriptionImagePath,
-          notes: _notesController.text.isEmpty ? null : _notesController.text,
-        );
+      await _storageService.saveTransaction(newTransaction);
 
-        // Simpan transaksi melalui provider
-        await transactionProvider.addTransaction(newTransaction);
-
-        // Tampilkan pesan sukses
-        if (!mounted) return;
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaksi berhasil disimpan!'),
-            backgroundColor: Colors.green,
-          ),
+          const SnackBar(content: Text('Transaksi berhasil disimpan!'), backgroundColor: Colors.green),
         );
-
-        // Arahkan ke halaman riwayat dan hapus semua halaman sebelumnya
-        Navigator.pushNamedAndRemoveUntil(
+        Navigator.pushAndRemoveUntil(
           context,
-          AppConstants.historyRoute,
-          (route) => false,
-        );
-      } catch (e) {
-        // Tangani error yang mungkin terjadi
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Terjadi kesalahan: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+          MaterialPageRoute(builder: (context) => HistoryScreen(user: widget.user)),
+          (Route<dynamic> route) => false,
         );
       }
-    } else {
-      // Jika validasi form gagal
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-              'Periksa kembali formulir Anda. Pastikan semua field yang wajib diisi sudah benar.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Formulir Pembelian')),
+      appBar: AppBar(
+        title: Text(AppStrings.purchaseTitle),
+        backgroundColor: AppColors.primaryGreen,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
@@ -163,90 +136,111 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Dropdown untuk memilih obat
-              InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Pilih Obat',
-                  border: OutlineInputBorder(),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<Medicine>(
-                    value: _selectedMedicine,
-                    isExpanded: true,
-                    hint: const Text('Pilih obat dari daftar'),
-                    items: Medicine.dummyMedicines.map((Medicine medicine) {
-                      return DropdownMenuItem<Medicine>(
-                        value: medicine,
-                        child: Text(
-                            '${medicine.name} - ${Helpers.formatCurrency(medicine.price)}'),
-                      );
-                    }).toList(),
-                    onChanged: (Medicine? newValue) {
-                      setState(() {
-                        _selectedMedicine = newValue;
-                      });
-                    },
-                  ),
-                ),
+              DropdownButtonFormField<Medicine>(
+                value: _selectedMedicine,
+                decoration: const InputDecoration(labelText: 'Pilih Obat', border: OutlineInputBorder()),
+                items: _dummyMedicines.map((Medicine medicine) {
+                  return DropdownMenuItem<Medicine>(value: medicine, child: Text(medicine.name));
+                }).toList(),
+                onChanged: (Medicine? newValue) {
+                  setState(() {
+                    _selectedMedicine = newValue;
+                  });
+                },
               ),
               const SizedBox(height: 16),
-              CustomTextfield(
+              CustomTextField(labelText: 'Nama Pembeli', controller: _buyerNameController, validator: Validators.validateNotEmpty),
+              CustomTextField(
+                labelText: 'Jumlah',
                 controller: _quantityController,
-                label: 'Jumlah Pembelian',
                 keyboardType: TextInputType.number,
-                validator: FormValidators.validateQuantity,
+                validator: (value) {
+                  final val = Validators.validateNumeric(value);
+                  if (val != null) return val;
+                  final qty = int.tryParse(value!);
+                  if (qty == null || qty <= 0) return 'Jumlah harus lebih dari 0';
+                  return null;
+                },
+                onChanged: (value) {
+                  setState(() {
+                    _quantity = int.tryParse(value) ?? 1;
+                  });
+                },
               ),
-              CustomTextfield(
-                controller: _notesController,
-                label: 'Catatan Tambahan (Opsional)',
-                maxLines: 3,
-              ),
+              CustomTextField(labelText: 'Catatan (Opsional)', controller: _notesController),
               const SizedBox(height: 16),
-              Text('Metode Pembelian',
-                  style: Theme.of(context).textTheme.bodyLarge),
-              RadioListTile<PurchaseMethod>(
-                title: const Text('Pembelian Langsung'),
-                value: PurchaseMethod.direct,
-                groupValue: _purchaseMethod,
-                onChanged: (value) => setState(() => _purchaseMethod = value!),
+              const Text('Metode Pembelian:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Beli Langsung'),
+                      value: 'Beli Langsung',
+                      groupValue: _purchaseMethod,
+                      onChanged: (value) {
+                        setState(() {
+                          _purchaseMethod = value!;
+                          _isPrescriptionSelected = false;
+                        });
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: RadioListTile<String>(
+                      title: const Text('Resep Dokter'),
+                      value: 'Resep Dokter',
+                      groupValue: _purchaseMethod,
+                      onChanged: (value) {
+                        setState(() {
+                          _purchaseMethod = value!;
+                          _isPrescriptionSelected = true;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
-              RadioListTile<PurchaseMethod>(
-                title: const Text('Pembelian dengan Resep Dokter'),
-                value: PurchaseMethod.prescription,
-                groupValue: _purchaseMethod,
-                onChanged: (value) => setState(() => _purchaseMethod = value!),
-              ),
-              if (_purchaseMethod == PurchaseMethod.prescription) ...[
-                CustomTextfield(
+              const SizedBox(height: 8),
+
+              // INPUT NOMOR RESEP & UPLOAD FOTO (KONDISIONAL)
+              if (_isPrescriptionSelected) ...[
+                CustomTextField(
+                  labelText: 'Nomor Resep',
                   controller: _prescriptionNumberController,
-                  label: 'Nomor Resep Dokter',
-                  validator: FormValidators.validatePrescriptionNumber,
+                  validator: Validators.validatePrescriptionNumber,
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(_prescriptionImagePath?.split('/').last ??
-                          'Belum ada file dipilih'),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.photo_library),
-                      onPressed: _pickImage,
-                      tooltip: 'Unggah Foto Resep',
-                    ),
-                  ],
+                CustomButton(
+                  text: _prescriptionImage == null
+                      ? 'Pilih Foto Resep'
+                      : 'Ubah Foto Resep (${_prescriptionImage!.path.split('/').last})',
+                  onPressed: _pickImage,
                 ),
-              ],
-              const SizedBox(height: 24),
-              Text(
-                'Total Harga: ${Helpers.formatCurrency(_calculateTotalPrice())}',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
+                // TAMPILKAN PREVIEW GAMBAR JIKA SUDAH DIPILIH
+                if (_prescriptionImage != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 16),
+                    height: 200,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.file(_prescriptionImage!, fit: BoxFit.cover),
+                    ),
+                  ),
+                const SizedBox(height: 16),
+              ],
+
+              Text(
+                'Total Harga: ${Helpers.formatCurrency(_totalPrice)}',
+                textAlign: TextAlign.right,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
               ),
               const SizedBox(height: 24),
-              CustomButton(text: 'Proses Pembelian', onPressed: _submitOrder),
+              CustomButton(text: 'Simpan Transaksi', onPressed: _submitPurchase),
             ],
           ),
         ),

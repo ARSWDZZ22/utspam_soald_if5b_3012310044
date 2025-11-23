@@ -1,14 +1,7 @@
-import 'package:intl/intl.dart';
+// lib/utils/helpers.dart
 
 class Helpers {
   static String formatCurrency(double amount) {
-    final format =
-        NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    return format.format(amount);
-  }
-
-  static String formatDate(DateTime date) {
-    final format = DateFormat('dd MMMM yyyy', 'id_ID');
-    return format.format(date);
+    return 'Rp ${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}';
   }
 }

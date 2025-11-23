@@ -1,29 +1,41 @@
+// lib/screens/register_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:utspam_soald_if5b_3012310044/models/user.dart';
-import 'package:utspam_soald_if5b_3012310044/providers/auth_provider.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/constants.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/validators.dart';
-import 'package:utspam_soald_if5b_3012310044/widgets/custom_button.dart';
-import 'package:utspam_soald_if5b_3012310044/widgets/custom_textfield.dart';
+import '../models/user.dart';
+import '../services/storage_service.dart';
+import '../utils/constants.dart';
+import '../utils/validators.dart';
+import '../widgets/custom_button.dart';
+import '../widgets/custom_textfield.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final StorageService _storageService = StorageService();
+
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _addressController = TextEditingController();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
+
   @override
   void dispose() {
-    /* ... dispose controllers ... */ super.dispose();
+    _fullNameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _addressController.dispose();
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
   Future<void> _register() async {
@@ -36,73 +48,86 @@ class _RegisterScreenState extends State<RegisterScreen> {
         username: _usernameController.text,
         password: _passwordController.text,
       );
-      try {
-        await Provider.of<AuthProvider>(context, listen: false)
-            .register(newUser);
-        if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-            context, AppConstants.homeRoute, (route) => false);
-      } catch (e) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
+
+      await _storageService.saveUser(newUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Registrasi berhasil! Silakan login.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+        );
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(builder: (context, authProvider, child) {
-      return Scaffold(
-          appBar: AppBar(title: const Text('Registrasi')),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(children: [
-                CustomTextfield(
-                    controller: _fullNameController,
-                    label: 'Nama Lengkap',
-                    validator: (v) => FormValidators.validateFieldRequired(
-                        v, 'Nama Lengkap')),
-                CustomTextfield(
-                    controller: _emailController,
-                    label: 'Email',
-                    keyboardType: TextInputType.emailAddress,
-                    validator: FormValidators.validateEmail),
-                CustomTextfield(
-                    controller: _phoneController,
-                    label: 'Nomor Telepon',
-                    keyboardType: TextInputType.phone,
-                    validator: FormValidators.validatePhoneNumber),
-                CustomTextfield(
-                    controller: _addressController,
-                    label: 'Alamat',
-                    maxLines: 3,
-                    validator: (v) =>
-                        FormValidators.validateFieldRequired(v, 'Alamat')),
-                CustomTextfield(
-                    controller: _usernameController,
-                    label: 'Username',
-                    validator: (v) =>
-                        FormValidators.validateFieldRequired(v, 'Username')),
-                CustomTextfield(
-                    controller: _passwordController,
-                    label: 'Password',
-                    obscureText: true,
-                    validator: FormValidators.validatePassword),
-                const SizedBox(height: 24),
-                CustomButton(
-                    text: 'Daftar',
-                    onPressed: _register,
-                    isLoading: authProvider.isLoading),
-                const SizedBox(height: 16),
-                TextButton(
-                    onPressed: () => Navigator.pushReplacementNamed(
-                        context, AppConstants.loginRoute),
-                    child: const Text('Sudah punya akun? Masuk di sini')),
-              ]),
-            ),
-          ));
-    });
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(AppStrings.registerTitle),
+        backgroundColor: AppColors.primaryGreen,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CustomTextField(
+                labelText: 'Nama Lengkap',
+                controller: _fullNameController,
+                validator: Validators.validateNotEmpty,
+                prefixIcon: Icons.person,
+              ),
+              CustomTextField(
+                labelText: 'Email',
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                validator: Validators.validateEmail,
+                prefixIcon: Icons.email,
+              ),
+              CustomTextField(
+                labelText: 'No. Telepon',
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                validator: Validators.validateNumeric,
+                prefixIcon: Icons.phone,
+              ),
+              CustomTextField(
+                labelText: 'Alamat',
+                controller: _addressController,
+                validator: Validators.validateNotEmpty,
+                prefixIcon: Icons.home,
+              ),
+              CustomTextField(
+                labelText: 'Username',
+                controller: _usernameController,
+                validator: Validators.validateNotEmpty,
+                prefixIcon: Icons.account_circle,
+              ),
+              CustomTextField(
+                labelText: 'Password',
+                controller: _passwordController,
+                obscureText: true,
+                validator: Validators.validatePassword,
+                prefixIcon: Icons.lock,
+              ),
+              const SizedBox(height: 24),
+              CustomButton(
+                text: 'Daftar',
+                onPressed: _register,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

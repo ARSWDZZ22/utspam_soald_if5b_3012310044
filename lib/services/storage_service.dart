@@ -1,57 +1,67 @@
+// lib/services/storage_service.dart
+
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:utspam_soald_if5b_3012310044/models/user.dart';
-import 'package:utspam_soald_if5b_3012310044/models/transaction.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/constants.dart';
+import '../models/user.dart';
+import '../models/transaction.dart';
 
 class StorageService {
-  static late SharedPreferences _prefs;
-  static Future<void> init() async =>
-      _prefs = await SharedPreferences.getInstance();
+  static const _userKey = 'logged_in_user';
+  static const _transactionsKey = 'transactions';
 
-  static Future<void> saveUser(User user) async {
-    await _prefs.setString(AppConstants.userDataKey, jsonEncode(user.toJson()));
+  // --- User Operations ---
+  Future<void> saveUser(User user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userKey, jsonEncode(user.toJson()));
   }
 
-  static User? getUser() {
-    final userJson = _prefs.getString(AppConstants.userDataKey);
-    return userJson != null ? User.fromJson(jsonDecode(userJson)) : null;
+  Future<User?> getUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    final userJson = prefs.getString(_userKey);
+    if (userJson != null) {
+      return User.fromJson(jsonDecode(userJson));
+    }
+    return null;
   }
 
-  static Future<void> clearUser() async =>
-      await _prefs.remove(AppConstants.userDataKey);
+  Future<void> clearUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+  }
 
-  static Future<void> saveTransaction(Transaction transaction) async {
-    final transactions = await getAllTransactions();
+  // --- Transaction Operations ---
+  Future<void> saveTransaction(Transaction transaction) async {
+    final prefs = await SharedPreferences.getInstance();
+    final transactions = await getTransactions();
     transactions.add(transaction);
-    await _prefs.setStringList(AppConstants.transactionListKey,
-        transactions.map((t) => jsonEncode(t.toJson())).toList());
+    // Simpan sebagai string JSON dari list
+    await prefs.setString(_transactionsKey, jsonEncode(transactions.map((t) => t.toJson()).toList()));
   }
 
-  static Future<List<Transaction>> getAllTransactions() async {
-    final list = _prefs.getStringList(AppConstants.transactionListKey);
-    return list
-            ?.map((json) => Transaction.fromJson(jsonDecode(json)))
-            .toList() ??
-        [];
-  }
-
-  static Future<void> updateTransaction(Transaction updatedTransaction) async {
-    final transactions = await getAllTransactions();
+  Future<void> updateTransaction(Transaction updatedTransaction) async {
+    final prefs = await SharedPreferences.getInstance();
+    final transactions = await getTransactions();
     final index = transactions.indexWhere((t) => t.id == updatedTransaction.id);
     if (index != -1) {
       transactions[index] = updatedTransaction;
-      await _prefs.setStringList(AppConstants.transactionListKey,
-          transactions.map((t) => jsonEncode(t.toJson())).toList());
+      await prefs.setString(_transactionsKey, jsonEncode(transactions.map((t) => t.toJson()).toList()));
     }
   }
 
-  static Future<void> deleteTransaction(String transactionId) async {
-    final transactions = await getAllTransactions();
-    transactions.removeWhere((t) => t.id == transactionId);
-    await _prefs.setStringList(AppConstants.transactionListKey,
-        transactions.map((t) => jsonEncode(t.toJson())).toList());
+  Future<List<Transaction>> getTransactions() async {
+    final prefs = await SharedPreferences.getInstance();
+    final transactionsJson = prefs.getString(_transactionsKey);
+    if (transactionsJson != null) {
+      final List<dynamic> decodedList = jsonDecode(transactionsJson);
+      return decodedList.map((item) => Transaction.fromJson(item)).toList();
+    }
+    return [];
   }
 
-  static Future<void> clearAllData() async => await _prefs.clear();
+  Future<void> deleteTransaction(String transactionId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final transactions = await getTransactions();
+    transactions.removeWhere((t) => t.id == transactionId);
+    await prefs.setString(_transactionsKey, jsonEncode(transactions.map((t) => t.toJson()).toList()));
+  }
 }

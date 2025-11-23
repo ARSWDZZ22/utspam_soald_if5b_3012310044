@@ -1,89 +1,173 @@
-// lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:utspam_soald_if5b_3012310044/models/medicine.dart';
-import 'package:utspam_soald_if5b_3012310044/providers/auth_provider.dart';
-import 'package:utspam_soald_if5b_3012310044/utils/constants.dart';
-import 'package:utspam_soald_if5b_3012310044/widgets/medicine_card.dart';
+import '../models/user.dart';
+import '../models/medicine.dart';
+import '../utils/constants.dart';
+import '../widgets/medicine_card.dart';
+import 'purchase_form_screen.dart';
+import 'history_screen.dart';
+import 'profile_screen.dart';
+import 'login_screen.dart'; // Impor untuk navigasi ke halaman login
+import '../services/storage_service.dart'; // Impor untuk mengelola data penyimpanan
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class HomeScreen extends StatefulWidget {
+  final User user;
+
+  const HomeScreen({Key? key, required this.user}) : super(key: key);
+
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final StorageService _storageService = StorageService();
+
+  // Data dummy untuk obat
+  final List<Medicine> dummyMedicines = [
+    Medicine(id: '1', name: 'Paracetamol 500mg', imageUrl: 'https://via.placeholder.com/150', price: 5000),
+    Medicine(id: '2', name: 'Amoxicillin 500mg', imageUrl: 'https://via.placeholder.com/150/FFC0CB/000000', price: 10000),
+    Medicine(id: '3', name: 'Vitamin C 1000mg', imageUrl: 'https://via.placeholder.com/150/0000FF/FFFFFF', price: 7500),
+    Medicine(id: '4', name: 'OBH Batuk', imageUrl: 'https://via.placeholder.com/150/008000/FFFFFF', price: 25000),
+    Medicine(id: '5', name: 'Bodrex Flu', imageUrl: 'https://via.placeholder.com/150/FFFF00/000000', price: 12000),
+    Medicine(id: '6', name: 'Antangin', imageUrl: 'https://via.placeholder.com/150/FFA500/FFFFFF', price: 8000),
+  ];
+
+  /// Fungsi untuk menangani proses logout pengguna.
+  /// Fungsi ini akan:
+  /// 1. Mengarahkan pengguna kembali ke halaman Login.
+  /// 2. Membersihkan tumpukan navigasi (stack) agar pengguna tidak bisa kembali
+  ///    ke halaman sebelumnya (seperti Home, Profile, dll) dengan tombol 'Back'.
+  /// 3. TIDAK menghapus data pengguna, sehingga mereka bisa login lagi nanti.
+  void _logout() async {
+    // --- PERUBAHAN PENTING ---
+    // Baris await _storageService.clearUser(); dihapus.
+    // Alasannya adalah agar data akun pengguna (username & password) tidak hilang
+    // dari penyimpanan lokal. Ini memungkinkan pengguna untuk login kembali
+    // dengan akun yang sama tanpa harus mendaftar ulang.
+    // Logika logout sekarang hanya fokus pada mengakhiri sesi navigasi.
+    
+    // Pastikan widget masih aktif sebelum melakukan navigasi
+    if (mounted) {
+      // Arahkan ke LoginScreen dan hapus semua halaman sebelumnya
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        // Kondisi (Route<dynamic> route) => false memastikan SEMUA
+        // halaman sebelumnya dihapus dari stack.
+        (Route<dynamic> route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Apotek Mobile'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              Navigator.pushNamed(context, AppConstants.profileRoute);
-            },
-          ),
-        ],
+        title: Text(AppStrings.homeTitle),
+        backgroundColor: AppColors.primaryGreen,
+        // Menghilangkan tombol 'Back' otomatis yang biasanya muncul
+        automaticallyImplyLeading: false,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Sapaan
             Text(
-              'Selamat datang, ${authProvider.user?.fullName ?? 'Pengguna'}!',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Halo, ${widget.user.fullName}',
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGrey,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+
+            // Menu Grid
             GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.2,
               children: [
-                _buildMenuCard(context, Icons.shopping_cart, 'Beli Obat', () {
-                  Navigator.pushNamed(context, AppConstants.purchaseFormRoute);
-                }),
-                _buildMenuCard(context, Icons.history, 'Riwayat', () {
-                  Navigator.pushNamed(context, AppConstants.historyRoute);
-                }),
-                _buildMenuCard(context, Icons.person, 'Profil', () {
-                  Navigator.pushNamed(context, AppConstants.profileRoute);
-                }),
-                _buildMenuCard(context, Icons.logout, 'Keluar', () {
-                  _showLogoutDialog(context);
-                }),
+                _buildMenuCard(
+                  icon: Icons.shopping_cart,
+                  title: 'Beli Obat',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PurchaseFormScreen(user: widget.user)),
+                    );
+                  },
+                ),
+                _buildMenuCard(
+                  icon: Icons.history,
+                  title: 'Riwayat',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => HistoryScreen(user: widget.user)),
+                    );
+                  },
+                ),
+                _buildMenuCard(
+                  icon: Icons.person,
+                  title: 'Profil',
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ProfileScreen(user: widget.user)),
+                    );
+                  },
+                ),
+                _buildMenuCard(
+                  icon: Icons.logout,
+                  title: 'Logout',
+                  onTap: _logout, // Panggil fungsi _logout saat tombol ditekan
+                  color: AppColors.red,
+                ),
               ],
             ),
             const SizedBox(height: 24),
-            Text(
-              'Rekomendasi Obat',
-              style: Theme.of(context).textTheme.headlineMedium,
+
+            // Katalog Obat
+            const Text(
+              'Katalog Obat',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.darkGrey,
+              ),
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: Medicine.dummyMedicines.length,
-                itemBuilder: (context, index) {
-                  final medicine = Medicine.dummyMedicines[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: MedicineCard(
-                      medicine: medicine,
-                      onTap: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppConstants.purchaseFormRoute,
-                          arguments: medicine,
-                        );
-                      },
-                    ),
-                  );
-                },
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 3 / 4,
               ),
+              itemCount: dummyMedicines.length,
+              itemBuilder: (context, index) {
+                final medicine = dummyMedicines[index];
+                return MedicineCard(
+                  medicine: medicine,
+                  onBuy: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PurchaseFormScreen(
+                          user: widget.user,
+                          selectedMedicine: medicine,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
           ],
         ),
@@ -91,43 +175,36 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuCard(BuildContext context, IconData icon, String title, VoidCallback onTap) {
+  /// Widget builder untuk membuat kartu menu di halaman beranda.
+  Widget _buildMenuCard({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color color = AppColors.primaryGreen,
+  }) {
     return Card(
-      elevation: 4,
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 50, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
-            Text(title, style: Theme.of(context).textTheme.bodyLarge),
-          ],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 48, color: color),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Konfirmasi Keluar'),
-        content: const Text('Apakah Anda yakin ingin keluar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Provider.of<AuthProvider>(context, listen: false).logout();
-            },
-            child: const Text('Keluar'),
-          ),
-        ],
       ),
     );
   }

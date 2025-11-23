@@ -34,6 +34,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
   @override
   void initState() {
     super.initState();
+    // Jika obat dikirim dari halaman sebelumnya (misal dari home), gunakan itu
     _selectedMedicine = widget.medicine;
   }
 
@@ -61,48 +62,92 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
     return _selectedMedicine!.price * quantity;
   }
 
+  // FUNGSI YANG SUDAH DIPERBAIKI
   Future<void> _submitOrder() async {
+    // 1. Pastikan obat sudah dipilih
     if (_selectedMedicine == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Pilih obat terlebih dahulu')));
+        const SnackBar(
+          content: Text('Harap pilih obat terlebih dahulu dari daftar.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
+    // 2. Validasi semua field di dalam form
     if (_formKey.currentState!.validate()) {
+      // 3. Jika metode resep, pastikan gambar sudah diunggah
       if (_purchaseMethod == PurchaseMethod.prescription &&
           _prescriptionImagePath == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unggah foto resep wajib diisi')));
+          const SnackBar(
+            content:
+                Text('Foto resep wajib diunggah untuk metode pembelian ini.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
 
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final transactionProvider =
-          Provider.of<TransactionProvider>(context, listen: false);
+      // Jika semua validasi lolos, proses penyimpanan
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final transactionProvider =
+            Provider.of<TransactionProvider>(context, listen: false);
 
-      final newTransaction = Transaction(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        buyerName: authProvider.user?.fullName ?? 'Pembeli',
-        medicineName: _selectedMedicine!.name,
-        quantity: int.parse(_quantityController.text),
-        unitPrice: _selectedMedicine!.price,
-        totalPrice: _calculateTotalPrice(),
-        date: Helpers.formatDate(DateTime.now()),
-        purchaseMethod: _purchaseMethod,
-        prescriptionNumber: _prescriptionNumberController.text.isEmpty
-            ? null
-            : _prescriptionNumberController.text,
-        prescriptionImagePath: _prescriptionImagePath,
-        notes: _notesController.text.isEmpty ? null : _notesController.text,
-      );
+        final newTransaction = Transaction(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          buyerName: authProvider.user?.fullName ?? 'Pembeli',
+          medicineName: _selectedMedicine!.name,
+          quantity: int.parse(_quantityController.text),
+          unitPrice: _selectedMedicine!.price,
+          totalPrice: _calculateTotalPrice(),
+          date: Helpers.formatDate(DateTime.now()),
+          purchaseMethod: _purchaseMethod,
+          prescriptionNumber: _prescriptionNumberController.text.isEmpty
+              ? null
+              : _prescriptionNumberController.text,
+          prescriptionImagePath: _prescriptionImagePath,
+          notes: _notesController.text.isEmpty ? null : _notesController.text,
+        );
 
-      await transactionProvider.addTransaction(newTransaction);
+        // Simpan transaksi melalui provider
+        await transactionProvider.addTransaction(newTransaction);
 
-      if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppConstants.historyRoute,
-        (route) => false,
+        // Tampilkan pesan sukses
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaksi berhasil disimpan!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Arahkan ke halaman riwayat dan hapus semua halaman sebelumnya
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppConstants.historyRoute,
+          (route) => false,
+        );
+      } catch (e) {
+        // Tangani error yang mungkin terjadi
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Terjadi kesalahan: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } else {
+      // Jika validasi form gagal
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Periksa kembali formulir Anda. Pastikan semua field yang wajib diisi sudah benar.'),
+          backgroundColor: Colors.orange,
+        ),
       );
     }
   }
@@ -118,14 +163,13 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Dropdown atau cara memilih obat
+              // Dropdown untuk memilih obat
               InputDecorator(
                 decoration: const InputDecoration(
                   labelText: 'Pilih Obat',
                   border: OutlineInputBorder(),
                 ),
-                child: ButtonTheme(
-                  alignedDropdown: true,
+                child: DropdownButtonHideUnderline(
                   child: DropdownButton<Medicine>(
                     value: _selectedMedicine,
                     isExpanded: true,

@@ -1,11 +1,7 @@
-// lib/utils/constants.dart
-
 class AppConstants {
-  // SharedPreferences Keys
   static const String userDataKey = 'user_data';
   static const String transactionListKey = 'transaction_list';
 
-  // Route Names
   static const String splashRoute = '/splash';
   static const String loginRoute = '/login';
   static const String registerRoute = '/register';

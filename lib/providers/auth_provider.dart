@@ -1,5 +1,3 @@
-// lib/providers/auth_provider.dart
-
 import 'package:flutter/material.dart';
 import 'package:utspam_soald_if5b_3012310044/models/user.dart';
 import 'package:utspam_soald_if5b_3012310044/services/storage_service.dart';
@@ -7,7 +5,6 @@ import 'package:utspam_soald_if5b_3012310044/services/storage_service.dart';
 class AuthProvider with ChangeNotifier {
   User? _user;
   bool _isLoading = false;
-
   User? get user => _user;
   bool get isLoggedIn => _user != null;
   bool get isLoading => _isLoading;
@@ -20,7 +17,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> login(String username, String password) async {
     _setLoading(true);
     try {
-      User? storedUser = StorageService.getUser();
+      final storedUser = StorageService.getUser();
       if (storedUser != null &&
           storedUser.username == username &&
           storedUser.password == password) {
@@ -30,7 +27,6 @@ class AuthProvider with ChangeNotifier {
         throw Exception('Username atau Password salah');
       }
     } catch (e) {
-      // Re-throw to be caught by UI
       rethrow;
     } finally {
       _setLoading(false);
@@ -51,11 +47,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
-    _setLoading(true);
     await StorageService.clearAllData();
     _user = null;
     notifyListeners();
-    _setLoading(false);
   }
 
   void _setLoading(bool value) {

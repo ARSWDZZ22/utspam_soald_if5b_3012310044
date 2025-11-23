@@ -1,7 +1,6 @@
 name: utspam_soald_if5b_3012310044
 description: A high-fidelity e-pharmacy platform.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
-
+publish_to: 'none'
 version: 1.0.0+1
 
 environment:
@@ -10,17 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
-  # State Management
   provider: ^6.1.2
-  
-  # Local Storage
   shared_preferences: ^2.5.3
-  
-  # Image Picking
   image_picker: ^1.1.2
-  
-  # Utilities
   intl: ^0.19.0
   google_fonts: ^6.2.1
 
@@ -31,4 +22,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
- 

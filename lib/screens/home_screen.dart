@@ -21,14 +21,39 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final StorageService _storageService = StorageService();
 
-  // Data dummy untuk obat
+  // Data dummy untuk obat dengan URL gambar yang baru
   final List<Medicine> dummyMedicines = [
-    Medicine(id: '1', name: 'Paracetamol 500mg', imageUrl: 'https://via.placeholder.com/150', price: 5000),
-    Medicine(id: '2', name: 'Amoxicillin 500mg', imageUrl: 'https://via.placeholder.com/150/FFC0CB/000000', price: 10000),
-    Medicine(id: '3', name: 'Vitamin C 1000mg', imageUrl: 'https://via.placeholder.com/150/0000FF/FFFFFF', price: 7500),
-    Medicine(id: '4', name: 'OBH Batuk', imageUrl: 'https://via.placeholder.com/150/008000/FFFFFF', price: 25000),
-    Medicine(id: '5', name: 'Bodrex Flu', imageUrl: 'https://via.placeholder.com/150/FFFF00/000000', price: 12000),
-    Medicine(id: '6', name: 'Antangin', imageUrl: 'https://via.placeholder.com/150/FFA500/FFFFFF', price: 8000),
+    Medicine(
+        id: '1',
+        name: 'Paracetamol 500mg',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/Paracetamol.webp',
+        price: 5000),
+    Medicine(
+        id: '2',
+        name: 'Amoxicillin 500mg',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/amoxilin.jpg',
+        price: 10000),
+    Medicine(
+        id: '3',
+        name: 'Vitamin C 1000mg',
+        imageUrl:
+            'https://ik.imagekit.io/arswdz22/apotik/Vitamin%20100%20Mg.webp',
+        price: 7500),
+    Medicine(
+        id: '4',
+        name: 'OBH Batuk',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/OBH.png',
+        price: 25000),
+    Medicine(
+        id: '5',
+        name: 'Bodrex Flu',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/Bodrek.jpg',
+        price: 12000),
+    Medicine(
+        id: '6',
+        name: 'Antangin',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/Antangin.jpg',
+        price: 8000),
   ];
 
   /// Fungsi untuk menangani proses logout pengguna.
@@ -38,13 +63,6 @@ class _HomeScreenState extends State<HomeScreen> {
   ///    ke halaman sebelumnya (seperti Home, Profile, dll) dengan tombol 'Back'.
   /// 3. TIDAK menghapus data pengguna, sehingga mereka bisa login lagi nanti.
   void _logout() async {
-    // --- PERUBAHAN PENTING ---
-    // Baris await _storageService.clearUser(); dihapus.
-    // Alasannya adalah agar data akun pengguna (username & password) tidak hilang
-    // dari penyimpanan lokal. Ini memungkinkan pengguna untuk login kembali
-    // dengan akun yang sama tanpa harus mendaftar ulang.
-    // Logika logout sekarang hanya fokus pada mengakhiri sesi navigasi.
-    
     // Pastikan widget masih aktif sebelum melakukan navigasi
     if (mounted) {
       // Arahkan ke LoginScreen dan hapus semua halaman sebelumnya
@@ -97,7 +115,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => PurchaseFormScreen(user: widget.user)),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              PurchaseFormScreen(user: widget.user)),
                     );
                   },
                 ),
@@ -107,7 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => HistoryScreen(user: widget.user)),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              HistoryScreen(user: widget.user)),
                     );
                   },
                 ),
@@ -117,7 +139,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => ProfileScreen(user: widget.user)),
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              ProfileScreen(user: widget.user)),
                     );
                   },
                 ),

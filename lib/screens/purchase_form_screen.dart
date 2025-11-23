@@ -1,8 +1,8 @@
 // lib/screens/purchase_form_screen.dart
 
-import 'dart:io'; // <-- IMPORT UNTUK MENANGANI FILE
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // <-- IMPORT PACKAGE IMAGE_PICKER
+import 'package:image_picker/image_picker.dart';
 import '../models/user.dart';
 import '../models/medicine.dart';
 import '../models/transaction.dart';
@@ -18,7 +18,9 @@ class PurchaseFormScreen extends StatefulWidget {
   final User user;
   final Medicine? selectedMedicine;
 
-  const PurchaseFormScreen({Key? key, required this.user, this.selectedMedicine}) : super(key: key);
+  const PurchaseFormScreen(
+      {Key? key, required this.user, this.selectedMedicine})
+      : super(key: key);
 
   @override
   _PurchaseFormScreenState createState() => _PurchaseFormScreenState();
@@ -27,7 +29,7 @@ class PurchaseFormScreen extends StatefulWidget {
 class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final StorageService _storageService = StorageService();
-  final ImagePicker _picker = ImagePicker(); // INSTANCE IMAGE_PICKER
+  final ImagePicker _picker = ImagePicker();
 
   late TextEditingController _buyerNameController;
   late TextEditingController _quantityController;
@@ -38,12 +40,43 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
   int _quantity = 1;
   String _purchaseMethod = 'Beli Langsung';
   bool _isPrescriptionSelected = false;
-  File? _prescriptionImage; // VARIABEL UNTUK MENYIMPAN FILE GAMBAR
+  File? _prescriptionImage;
 
+  // --- DAFTAR OBAT LENGKAP ---
+  // Daftar ini sekarang mencakup semua obat yang ada di home_screen.dart
+  // untuk memberikan pilihan yang lengkap kepada pengguna.
   final List<Medicine> _dummyMedicines = [
-    Medicine(id: '1', name: 'Paracetamol 500mg', imageUrl: 'https://via.placeholder.com/150', price: 5000),
-    Medicine(id: '2', name: 'Amoxicillin 500mg', imageUrl: 'https://via.placeholder.com/150/FFC0CB/000000', price: 10000),
-    Medicine(id: '3', name: 'Vitamin C 1000mg', imageUrl: 'https://via.placeholder.com/150/0000FF/FFFFFF', price: 7500),
+    Medicine(
+        id: '1',
+        name: 'Paracetamol 500mg',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/Paracetamol.webp',
+        price: 5000),
+    Medicine(
+        id: '2',
+        name: 'Amoxicillin 500mg',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/amoxilin.jpg',
+        price: 10000),
+    Medicine(
+        id: '3',
+        name: 'Vitamin C 1000mg',
+        imageUrl:
+            'https://ik.imagekit.io/arswdz22/apotik/Vitamin%20100%20Mg.webp',
+        price: 7500),
+    Medicine(
+        id: '4',
+        name: 'OBH Batuk',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/OBH.png',
+        price: 25000),
+    Medicine(
+        id: '5',
+        name: 'Bodrex Flu',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/Bodrek.jpg',
+        price: 12000),
+    Medicine(
+        id: '6',
+        name: 'Antangin',
+        imageUrl: 'https://ik.imagekit.io/arswdz22/apotik/Antangin.jpg',
+        price: 8000),
   ];
 
   @override
@@ -53,6 +86,7 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
     _quantityController = TextEditingController(text: '1');
     _notesController = TextEditingController();
     _prescriptionNumberController = TextEditingController();
+    // Jika ada obat yang dipilih dari beranda, gunakan itu. Jika tidak, gunakan obat pertama dari daftar.
     _selectedMedicine = widget.selectedMedicine ?? _dummyMedicines.first;
   }
 
@@ -67,7 +101,6 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
 
   double get _totalPrice => (_selectedMedicine?.price ?? 0) * _quantity;
 
-  // FUNGSI UNTUK MEMILIH GAMBAR DARI GALERI
   Future<void> _pickImage() async {
     final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
@@ -79,17 +112,20 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
 
   Future<void> _submitPurchase() async {
     if (_formKey.currentState!.validate()) {
-      // VALIDASI WAJIB UNGGAH FOTO RESEP
       if (_isPrescriptionSelected && _prescriptionImage == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto resep wajib diunggah.'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Foto resep wajib diunggah.'),
+              backgroundColor: Colors.red),
         );
         return;
       }
-      // VALIDASI WAJIB ISI NOMOR RESEP
-      if (_isPrescriptionSelected && _prescriptionNumberController.text.isEmpty) {
+      if (_isPrescriptionSelected &&
+          _prescriptionNumberController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Nomor resep wajib diisi.'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Nomor resep wajib diisi.'),
+              backgroundColor: Colors.red),
         );
         return;
       }
@@ -101,8 +137,9 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
         quantity: _quantity,
         notes: _notesController.text,
         purchaseMethod: _purchaseMethod,
-        prescriptionNumber: _isPrescriptionSelected ? _prescriptionNumberController.text : null,
-        prescriptionImagePath: _prescriptionImage?.path, // SIMPAN PATH GAMBAR
+        prescriptionNumber:
+            _isPrescriptionSelected ? _prescriptionNumberController.text : null,
+        prescriptionImagePath: _prescriptionImage?.path,
         timestamp: DateTime.now(),
         status: 'Aktif',
       );
@@ -111,11 +148,14 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Transaksi berhasil disimpan!'), backgroundColor: Colors.green),
+          const SnackBar(
+              content: Text('Transaksi berhasil disimpan!'),
+              backgroundColor: Colors.green),
         );
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) => HistoryScreen(user: widget.user)),
+          MaterialPageRoute(
+              builder: (context) => HistoryScreen(user: widget.user)),
           (Route<dynamic> route) => false,
         );
       }
@@ -138,9 +178,11 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
             children: [
               DropdownButtonFormField<Medicine>(
                 value: _selectedMedicine,
-                decoration: const InputDecoration(labelText: 'Pilih Obat', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Pilih Obat', border: OutlineInputBorder()),
                 items: _dummyMedicines.map((Medicine medicine) {
-                  return DropdownMenuItem<Medicine>(value: medicine, child: Text(medicine.name));
+                  return DropdownMenuItem<Medicine>(
+                      value: medicine, child: Text(medicine.name));
                 }).toList(),
                 onChanged: (Medicine? newValue) {
                   setState(() {
@@ -149,7 +191,10 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              CustomTextField(labelText: 'Nama Pembeli', controller: _buyerNameController, validator: Validators.validateNotEmpty),
+              CustomTextField(
+                  labelText: 'Nama Pembeli',
+                  controller: _buyerNameController,
+                  validator: Validators.validateNotEmpty),
               CustomTextField(
                 labelText: 'Jumlah',
                 controller: _quantityController,
@@ -158,7 +203,8 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
                   final val = Validators.validateNumeric(value);
                   if (val != null) return val;
                   final qty = int.tryParse(value!);
-                  if (qty == null || qty <= 0) return 'Jumlah harus lebih dari 0';
+                  if (qty == null || qty <= 0)
+                    return 'Jumlah harus lebih dari 0';
                   return null;
                 },
                 onChanged: (value) {
@@ -167,9 +213,12 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
                   });
                 },
               ),
-              CustomTextField(labelText: 'Catatan (Opsional)', controller: _notesController),
+              CustomTextField(
+                  labelText: 'Catatan (Opsional)',
+                  controller: _notesController),
               const SizedBox(height: 16),
-              const Text('Metode Pembelian:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text('Metode Pembelian:',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               Row(
                 children: [
                   Expanded(
@@ -201,8 +250,6 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-
-              // INPUT NOMOR RESEP & UPLOAD FOTO (KONDISIONAL)
               if (_isPrescriptionSelected) ...[
                 CustomTextField(
                   labelText: 'Nomor Resep',
@@ -216,7 +263,6 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
                       : 'Ubah Foto Resep (${_prescriptionImage!.path.split('/').last})',
                   onPressed: _pickImage,
                 ),
-                // TAMPILKAN PREVIEW GAMBAR JIKA SUDAH DIPILIH
                 if (_prescriptionImage != null)
                   Container(
                     margin: const EdgeInsets.only(top: 16),
@@ -233,14 +279,17 @@ class _PurchaseFormScreenState extends State<PurchaseFormScreen> {
                   ),
                 const SizedBox(height: 16),
               ],
-
               Text(
                 'Total Harga: ${Helpers.formatCurrency(_totalPrice)}',
                 textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primaryGreen),
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primaryGreen),
               ),
               const SizedBox(height: 24),
-              CustomButton(text: 'Simpan Transaksi', onPressed: _submitPurchase),
+              CustomButton(
+                  text: 'Simpan Transaksi', onPressed: _submitPurchase),
             ],
           ),
         ),

@@ -1,19 +1,13 @@
-// lib/models/medicine.dart
-
 class Medicine {
-  final String id;
-  final String name;
-  final String category;
-  final String imageUrl;
+  final String id, name, category, imageUrl;
   final double price;
 
-  Medicine({
-    required this.id,
-    required this.name,
-    required this.category,
-    required this.imageUrl,
-    required this.price,
-  });
+  Medicine(
+      {required this.id,
+      required this.name,
+      required this.category,
+      required this.imageUrl,
+      required this.price});
 
   static List<Medicine> dummyMedicines = [
     Medicine(
